@@ -23,7 +23,7 @@ mkdir -p "$BACKUP_DIR"
 trap 'echo "Ensuring Syncthing is running..."; docker start "$CONTAINER_NAME" >/dev/null 2>&1 || true' EXIT
 
 # Find newest backup file (if any)
-latest_backup=$(ls -1 "$BACKUP_DIR"/syncthing_config_*.tar.gz 2>/dev/null | sort | tail -n 1 || true)
+latest_backup=$(ls -1 "$BACKUP_DIR"/syncthing_config_*.zip 2>/dev/null | sort | tail -n 1 || true)
 
 # If no backups exist, force a backup
 if [ -z "$latest_backup" ]; then
@@ -60,13 +60,16 @@ fi
 ########################################
 if [ "$run_backup" = true ]; then
     timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
-    archive="$BACKUP_DIR/syncthing_config_${timestamp}.tar.gz"
+    archive="$BACKUP_DIR/syncthing_config_${timestamp}.zip"
 
     echo "Stopping container: $CONTAINER_NAME"
     docker stop "$CONTAINER_NAME"
 
     echo "Creating backup: $archive"
-    tar -czf "$archive" -C "$CONFIG_DIR" .
+    (
+        cd "$CONFIG_DIR"
+        zip -r "$archive" . -x "*/@eaDir/*"
+    )
 
     echo "Backup complete."
 else
